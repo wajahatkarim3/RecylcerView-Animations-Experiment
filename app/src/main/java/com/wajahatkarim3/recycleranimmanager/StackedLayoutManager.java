@@ -86,7 +86,14 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
 
         if (dx > 0)                 // Contents are scrolling left
         {
-            scrollToLeft(recycler, dx);
+            // Don't exceed more than last item. Stop scrolling as last item comes in screen
+            if (!isLastItemVisible())
+            {
+                View lastView = getChildAt(getChildCount()-1);
+                int diff = lastView.getRight() - getWidth();
+                dx = Math.min(diff, dx);
+                scrollToLeft(recycler, dx);
+            }
         }
         else if (dx < 0)            // Contents are scrolling right
         {
@@ -209,8 +216,8 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
             }
         }
 
-        if (logsEnabled)
-            Log.d(TAG, "findFirstVisiblePosition: " + firstVisibleItem);
+        //if (logsEnabled)
+        //    Log.d(TAG, "findFirstVisiblePosition: " + firstVisibleItem);
     }
 
     private boolean isLastItemVisible()
@@ -243,16 +250,29 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         findFirstVisiblePosition(recycler);
 
         View firstView = getChildAt(0);
-        int minLeft = firstView.getLeft();
 
-        for (int i=firstVisibleItem+1; i<getChildCount(); i++)
+        if (isAnyPartialView(recycler) == false)
         {
-            View view = getChildAt(i);
-            int diff = view.getLeft() - firstView.getLeft();
-            //if (logsEnabled)
-            //    Log.e(TAG, "scrollToLeft: " + "min: " + minLeft + "  ---  dx: " + dx + "  -- diff: " + diff );
-            view.offsetLeftAndRight(-Math.min(diff, dx));
+            for (int i=firstVisibleItem+1; i<getChildCount(); i++)
+            {
+                View view = getChildAt(i);
+                int diff = view.getLeft() - firstView.getLeft();
+                //if (logsEnabled)
+                //    Log.e(TAG, "scrollToLeft: " + "min: " + minLeft + "  ---  dx: " + dx + "  -- diff: " + diff );
+                view.offsetLeftAndRight(-Math.min(diff, dx));
+            }
         }
+        else {
+            for (int i=firstVisibleItem; i<getChildCount(); i++)
+            {
+                View view = getChildAt(i);
+                int diff = view.getLeft() - firstView.getLeft();
+                //if (logsEnabled)
+                //    Log.e(TAG, "scrollToLeft: " + "min: " + minLeft + "  ---  dx: " + dx + "  -- diff: " + diff );
+                view.offsetLeftAndRight(-Math.min(diff, dx));
+            }
+        }
+
     }
 
     public void scrollToRight(RecyclerView.Recycler recycler, int dx)
@@ -260,7 +280,8 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         // Find first visible item
         findFirstVisiblePosition(recycler);
 
-        if (firstVisibleItem==0)
+        // If we have reached on exceed left, don't scroll anymore
+        if (firstVisibleItem==0 && !isAnyPartialView(recycler))
             return;
 
         int startItem = isAnyPartialView(recycler)?firstVisibleItem+1:firstVisibleItem;
@@ -270,8 +291,8 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
 
         int diff = topView.getRight() - startView.getLeft();
 
-        if (logsEnabled)
-            Log.e(TAG, "scrollToRight: Diff: " + diff );
+        //if (logsEnabled)
+        //    Log.e(TAG, "scrollToRight: Diff: " + diff );
 
         if (diff <= 0)
         {
@@ -289,18 +310,23 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
             for (int i=startItem; i<getChildCount(); i++)
             {
                 View view = getChildAt(i);
+                if (logsEnabled)
+                    Log.e(TAG, "scrollToRight: " + i + " - diff: " + diff + " -- dx: " + dx );
                 view.offsetLeftAndRight(-Math.min(dx, diff));
             }
         }
-        else {
+        else if (diff > 0) {
+
             for (int i=startItem; i<getChildCount(); i++)
             {
                 View view = getChildAt(i);
+
+                if (logsEnabled)
+                    Log.w(TAG, "scrollToRight: " + i + " - diff: " + diff + " -- dx: " + dx );
+
                 view.offsetLeftAndRight(-Math.min(dx, diff));
             }
         }
-
-
     }
 
     public boolean isAnyPartialView(RecyclerView.Recycler recycler)
@@ -316,8 +342,8 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         if (partialView.getLeft() > topView.getLeft() && topView.getRight() > partialView.getLeft())
         //if (topView.getLeft() == partialView.getLeft() && topView.getRight() == partialView.getRight())
         {
-            if (logsEnabled)
-                Log.w(TAG, "isAnyPartialView: " + " true");
+            //if (logsEnabled)
+            //    Log.w(TAG, "isAnyPartialView: " + " true");
             return true;
         }
 
