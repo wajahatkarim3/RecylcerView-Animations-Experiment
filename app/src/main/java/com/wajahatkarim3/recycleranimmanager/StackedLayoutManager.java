@@ -307,23 +307,34 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
 
             diff = topView.getRight() - startView.getLeft();
 
+            boolean isPartial = true;
             for (int i=startItem; i<getChildCount(); i++)
             {
-                View view = getChildAt(i);
-                View prevView = getChildAt(i-1);
 
-                if (prevView != null)
+                View view = getChildAt(i);
+                //View prevView = getChildAt(i-1);
+
+                //if (prevView != null && isPartial)
                 {
                     if (logsEnabled)
                         Log.e(TAG, "scrollToRight: " + i + " - diff: " + diff + " -- dx: " + dx );
 
                     int delta = Math.min(dx, diff);
 
-                    int dis = view.getLeft() - prevView.getRight();
-                    delta = Math.min(dis, delta);
+                    //int dis = view.getLeft() - prevView.getRight();
+                    //delta = Math.min(dis, delta);
+                    if (logsEnabled)
+                        Log.w(TAG, "scrollToRight: " + i + " - delta: " + -delta );
+
 
                     view.offsetLeftAndRight(-delta);
+
+
+
+                    //isPartial = false;
                 }
+
+
 
             }
         }
@@ -332,11 +343,25 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
             for (int i=startItem; i<getChildCount(); i++)
             {
                 View view = getChildAt(i);
+                View prevView = getChildAt(i-1);
 
-                if (logsEnabled)
-                    Log.w(TAG, "scrollToRight: " + i + " - diff: " + diff + " -- dx: " + dx );
+                if (prevView != null)
+                {
 
-                view.offsetLeftAndRight(-Math.min(dx, diff));
+                    if (logsEnabled)
+                        Log.w(TAG, "scrollToRight: " + i + " - diff: " + diff + " -- dx: " + dx );
+
+                    int delta = Math.max(dx, -diff);
+
+                    int dis = view.getLeft() - prevView.getLeft();
+                    delta = Math.min(dis, delta);
+                    if (logsEnabled)
+                        Log.e(TAG, "scrollToRight: " + i + " - delta: " + delta );
+
+                    view.offsetLeftAndRight(-delta);
+                }
+
+
             }
         }
     }
