@@ -5,6 +5,7 @@ import android.util.Log;
 import android.view.View;
 
 import java.util.List;
+import java.util.regex.Matcher;
 
 /**
  * Created by Wajahat on 8/3/2017.
@@ -39,10 +40,14 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
      */
     int numViewsToScale = 2;
 
+    int leftBorder = 0;
+
     /**
      * Enable / disable logs
      */
     boolean logsEnabled = true;
+    private int SCALE_MARGIN = 50;
+    private float SCALE_FACTOR = 0.8f;
 
     @Override
     public RecyclerView.LayoutParams generateDefaultLayoutParams() {
@@ -112,13 +117,13 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         detachAndScrapAttachedViews(recycler);
 
         // Layout scaled views here
-        int scaledViewsCount = drawScaledViews(recycler);
+        //int scaledViewsCount = drawScaledViews(recycler);
 
         // Layout visible views here
         int decorViewsCount = drawDecorViews(recycler);
 
-        if (logsEnabled)
-            Log.w(TAG, "fillTheView: Scaled: " + scaledViewsCount + " --- Decor: " + decorViewsCount  );
+        //if (logsEnabled)
+            //Log.w(TAG, "fillTheView: Scaled: " + scaledViewsCount + " --- Decor: " + decorViewsCount  );
 
         // Remove anything that is left behind
         final List<RecyclerView.ViewHolder> scrapList = recycler.getScrapList();
@@ -158,7 +163,8 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
     public int drawDecorViews(RecyclerView.Recycler recycler)
     {
         int decorViewsCount = 0;
-        int left = getPaddingLeft();
+        int left = getPaddingLeft() + SCALE_MARGIN;
+        leftBorder = getPaddingLeft() + SCALE_MARGIN;
         int i = firstVisibleItem;
         //while (i >= firstVisibleItem && i < (firstVisibleItem + maxViewToVisible) )
         while (i >= firstVisibleItem && i < getItemCount() )
@@ -181,6 +187,7 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
 
             decorViewsCount++;
         }
+
         return decorViewsCount;
     }
 
@@ -209,7 +216,7 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         for (int i=0; i<getChildCount(); i++)
         {
             View view = getChildAt(i);
-            if (view.getRight() >= getPaddingLeft() && view.getRight() <= itemViewWidth && i > firstVisibleItem)
+            if (view.getRight() >= getPaddingLeft() && view.getRight() <= itemViewWidth + SCALE_MARGIN && i > firstVisibleItem)
             {
                 firstVisibleItem = i;
                 break;
@@ -256,7 +263,8 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
             for (int i=firstVisibleItem+1; i<getChildCount(); i++)
             {
                 View view = getChildAt(i);
-                int diff = view.getLeft() - firstView.getLeft();
+                //int diff = view.getLeft() - firstView.getLeft();
+                int diff = view.getLeft() - leftBorder;
                 //if (logsEnabled)
                 //    Log.e(TAG, "scrollToLeft: " + "min: " + minLeft + "  ---  dx: " + dx + "  -- diff: " + diff );
                 view.offsetLeftAndRight(-Math.min(diff, dx));
@@ -266,13 +274,82 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
             for (int i=firstVisibleItem; i<getChildCount(); i++)
             {
                 View view = getChildAt(i);
-                int diff = view.getLeft() - firstView.getLeft();
+                //int diff = view.getLeft() - firstView.getLeft();
+                int diff = view.getLeft() - leftBorder;
                 //if (logsEnabled)
                 //    Log.e(TAG, "scrollToLeft: " + "min: " + minLeft + "  ---  dx: " + dx + "  -- diff: " + diff );
                 view.offsetLeftAndRight(-Math.min(diff, dx));
             }
         }
 
+        scaleDownViews(recycler);
+    }
+
+    private void scaleUpViews(RecyclerView.Recycler recycler) {
+
+        // Find first visible
+        //findFirstVisiblePosition(recycler);
+
+        //if (firstVisibleItem <= 0)
+        //    return;
+
+        /*
+        for (int i=0; i<numViewsToScale; i++)
+        {
+            View view = getChildAt(firstVisibleItem-1-i);
+            if (view != null && view.getScaleX() == 1f)
+            {
+                view.setScaleX(SCALE_FACTOR);
+                view.setScaleY(SCALE_FACTOR);
+                view.setLeft(view.getLeft() - SCALE_MARGIN);
+                view.setRight(view.getRight() - SCALE_MARGIN);
+            }
+
+        }
+        */
+
+        View view = getChildAt(firstVisibleItem);
+        if (view != null)
+        {
+            view.setScaleX(1f);
+            view.setScaleY(1f);
+            view.setLeft(view.getLeft() + SCALE_MARGIN);
+            view.setRight(view.getRight() + SCALE_MARGIN);
+        }
+    }
+
+    public void scaleDownViews(RecyclerView.Recycler recycler)
+    {
+        // Find first visible
+        findFirstVisiblePosition(recycler);
+
+        //if (firstVisibleItem <= 0)
+         //   return;
+
+        //for (int i=0; i<numViewsToScale; i++)
+        {
+            View toScaleview = getChildAt(firstVisibleItem);
+            View overlayView = getChildAt(firstVisibleItem+1);
+
+            if (logsEnabled)
+                Log.w(TAG, "scaleDownViews: toScale: " + (firstVisibleItem) + " ---- overlay: " + (firstVisibleItem+1) );
+
+            if (toScaleview != null && toScaleview.getScaleX() > SCALE_FACTOR)
+            {
+                int dist = overlayView.getLeft() - toScaleview.getLeft();
+                float ratio = dist * 100 / itemViewWidth;
+
+                if (logsEnabled)
+                    Log.e(TAG, "scaleDownViews: -- dist: " + dist + " --- ratio: " + ratio);
+
+                toScaleview.setScaleX( (SCALE_FACTOR) * ratio / 100);
+                toScaleview.setScaleY((SCALE_FACTOR) * ratio / 100);
+                //toScaleview.offsetLeftAndRight((int)(SCALE_MARGIN*ratio/100));
+                //toScaleview.setLeft(toScaleview.getLeft() + (int)(SCALE_MARGIN*ratio/100));
+                //toScaleview.setRight(toScaleview.getRight() + (int)(SCALE_MARGIN*ratio/100));
+            }
+
+        }
     }
 
     public void scrollToRight(RecyclerView.Recycler recycler, int dx)
@@ -298,6 +375,8 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         {
             firstVisibleItem--;
 
+            scaleUpViews(recycler);
+
             if (firstVisibleItem==0)
                 return;
 
@@ -316,15 +395,15 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
 
                 //if (prevView != null && isPartial)
                 {
-                    if (logsEnabled)
-                        Log.e(TAG, "scrollToRight: " + i + " - diff: " + diff + " -- dx: " + dx );
+                    //if (logsEnabled)
+                    //    Log.e(TAG, "scrollToRight: " + i + " - diff: " + diff + " -- dx: " + dx );
 
                     int delta = Math.min(dx, diff);
 
                     //int dis = view.getLeft() - prevView.getRight();
                     //delta = Math.min(dis, delta);
-                    if (logsEnabled)
-                        Log.w(TAG, "scrollToRight: " + i + " - delta: " + -delta );
+                    //if (logsEnabled)
+                    //    Log.w(TAG, "scrollToRight: " + i + " - delta: " + -delta );
 
 
                     view.offsetLeftAndRight(-delta);
@@ -348,15 +427,15 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
                 if (prevView != null)
                 {
 
-                    if (logsEnabled)
-                        Log.w(TAG, "scrollToRight: " + i + " - diff: " + diff + " -- dx: " + dx );
+                    //if (logsEnabled)
+                    //    Log.w(TAG, "scrollToRight: " + i + " - diff: " + diff + " -- dx: " + dx );
 
                     int delta = Math.max(dx, -diff);
 
                     int dis = view.getLeft() - prevView.getLeft();
                     delta = Math.min(dis, delta);
-                    if (logsEnabled)
-                        Log.e(TAG, "scrollToRight: " + i + " - delta: " + delta );
+                    //if (logsEnabled)
+                    //    Log.e(TAG, "scrollToRight: " + i + " - delta: " + delta );
 
                     view.offsetLeftAndRight(-delta);
                 }
@@ -364,6 +443,8 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
 
             }
         }
+
+        //zoomInViews(recycler);
     }
 
     public boolean isAnyPartialView(RecyclerView.Recycler recycler)
