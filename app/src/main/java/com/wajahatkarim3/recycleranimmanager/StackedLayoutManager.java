@@ -310,9 +310,21 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
             for (int i=startItem; i<getChildCount(); i++)
             {
                 View view = getChildAt(i);
-                if (logsEnabled)
-                    Log.e(TAG, "scrollToRight: " + i + " - diff: " + diff + " -- dx: " + dx );
-                view.offsetLeftAndRight(-Math.min(dx, diff));
+                View prevView = getChildAt(i-1);
+
+                if (prevView != null)
+                {
+                    if (logsEnabled)
+                        Log.e(TAG, "scrollToRight: " + i + " - diff: " + diff + " -- dx: " + dx );
+
+                    int delta = Math.min(dx, diff);
+
+                    int dis = view.getLeft() - prevView.getRight();
+                    delta = Math.min(dis, delta);
+
+                    view.offsetLeftAndRight(-delta);
+                }
+
             }
         }
         else if (diff > 0) {
