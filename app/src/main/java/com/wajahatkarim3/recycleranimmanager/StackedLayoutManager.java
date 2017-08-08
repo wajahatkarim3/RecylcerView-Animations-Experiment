@@ -49,6 +49,14 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
     private int SCALE_MARGIN = 50;
     private float SCALE_FACTOR = 0.8f;
 
+    public StackedLayoutManager() {
+    }
+
+    public StackedLayoutManager(int SCALE_MARGIN, float SCALE_FACTOR) {
+        this.SCALE_MARGIN = SCALE_MARGIN;
+        this.SCALE_FACTOR = SCALE_FACTOR;
+    }
+
     @Override
     public RecyclerView.LayoutParams generateDefaultLayoutParams() {
         return new RecyclerView.LayoutParams(RecyclerView.LayoutParams.WRAP_CONTENT, RecyclerView.LayoutParams.WRAP_CONTENT);

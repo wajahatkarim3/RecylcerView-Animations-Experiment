@@ -13,10 +13,16 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
-        //recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         recyclerView.setLayoutManager(new StackedLayoutManager());
         BooksAdapter adapter = new BooksAdapter();
         recyclerView.setAdapter(adapter);
+        adapter.notifyDataSetChanged();
+
+
+        RecyclerView catrecyclerView = (RecyclerView) findViewById(R.id.recyclerCategories);
+        catrecyclerView.setLayoutManager(new StackedLayoutManager(100, 0.7f));
+        CategoriesAdapter catadapter = new CategoriesAdapter();
+        catrecyclerView.setAdapter(catadapter);
         adapter.notifyDataSetChanged();
     }
 }
