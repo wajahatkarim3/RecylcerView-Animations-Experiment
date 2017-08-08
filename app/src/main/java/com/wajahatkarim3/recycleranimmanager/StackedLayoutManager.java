@@ -258,6 +258,7 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
 
         View firstView = getChildAt(0);
 
+        // Not any partial view, move next element and onwards to left
         if (isAnyPartialView(recycler) == false)
         {
             for (int i=firstVisibleItem+1; i<getChildCount(); i++)
@@ -269,6 +270,8 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
                 //    Log.e(TAG, "scrollToLeft: " + "min: " + minLeft + "  ---  dx: " + dx + "  -- diff: " + diff );
                 view.offsetLeftAndRight(-Math.min(diff, dx));
             }
+
+            scaleDownFirstView(recycler, firstVisibleItem);
         }
         else {
             for (int i=firstVisibleItem; i<getChildCount(); i++)
@@ -276,79 +279,13 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
                 View view = getChildAt(i);
                 //int diff = view.getLeft() - firstView.getLeft();
                 int diff = view.getLeft() - leftBorder;
+
                 //if (logsEnabled)
                 //    Log.e(TAG, "scrollToLeft: " + "min: " + minLeft + "  ---  dx: " + dx + "  -- diff: " + diff );
                 view.offsetLeftAndRight(-Math.min(diff, dx));
             }
-        }
 
-        scaleDownViews(recycler);
-    }
-
-    private void scaleUpViews(RecyclerView.Recycler recycler) {
-
-        // Find first visible
-        //findFirstVisiblePosition(recycler);
-
-        //if (firstVisibleItem <= 0)
-        //    return;
-
-        /*
-        for (int i=0; i<numViewsToScale; i++)
-        {
-            View view = getChildAt(firstVisibleItem-1-i);
-            if (view != null && view.getScaleX() == 1f)
-            {
-                view.setScaleX(SCALE_FACTOR);
-                view.setScaleY(SCALE_FACTOR);
-                view.setLeft(view.getLeft() - SCALE_MARGIN);
-                view.setRight(view.getRight() - SCALE_MARGIN);
-            }
-
-        }
-        */
-
-        View view = getChildAt(firstVisibleItem);
-        if (view != null)
-        {
-            view.setScaleX(1f);
-            view.setScaleY(1f);
-            view.setLeft(view.getLeft() + SCALE_MARGIN);
-            view.setRight(view.getRight() + SCALE_MARGIN);
-        }
-    }
-
-    public void scaleDownViews(RecyclerView.Recycler recycler)
-    {
-        // Find first visible
-        findFirstVisiblePosition(recycler);
-
-        //if (firstVisibleItem <= 0)
-         //   return;
-
-        //for (int i=0; i<numViewsToScale; i++)
-        {
-            View toScaleview = getChildAt(firstVisibleItem);
-            View overlayView = getChildAt(firstVisibleItem+1);
-
-            if (logsEnabled)
-                Log.w(TAG, "scaleDownViews: toScale: " + (firstVisibleItem) + " ---- overlay: " + (firstVisibleItem+1) );
-
-            if (toScaleview != null && toScaleview.getScaleX() > SCALE_FACTOR)
-            {
-                int dist = overlayView.getLeft() - toScaleview.getLeft();
-                float ratio = dist * 100 / itemViewWidth;
-
-                if (logsEnabled)
-                    Log.e(TAG, "scaleDownViews: -- dist: " + dist + " --- ratio: " + ratio);
-
-                toScaleview.setScaleX( (SCALE_FACTOR) * ratio / 100);
-                toScaleview.setScaleY((SCALE_FACTOR) * ratio / 100);
-                //toScaleview.offsetLeftAndRight((int)(SCALE_MARGIN*ratio/100));
-                //toScaleview.setLeft(toScaleview.getLeft() + (int)(SCALE_MARGIN*ratio/100));
-                //toScaleview.setRight(toScaleview.getRight() + (int)(SCALE_MARGIN*ratio/100));
-            }
-
+            scaleDownFirstView(recycler, firstVisibleItem);
         }
     }
 
@@ -374,8 +311,6 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         if (diff <= 0)
         {
             firstVisibleItem--;
-
-            scaleUpViews(recycler);
 
             if (firstVisibleItem==0)
                 return;
@@ -413,8 +348,6 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
                     //isPartial = false;
                 }
 
-
-
             }
         }
         else if (diff > 0) {
@@ -439,12 +372,10 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
 
                     view.offsetLeftAndRight(-delta);
                 }
-
-
             }
         }
 
-        //zoomInViews(recycler);
+        scaleUpFirstView(recycler, startItem-1);
     }
 
     public boolean isAnyPartialView(RecyclerView.Recycler recycler)
@@ -467,5 +398,116 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
 
         return false;
     }
+
+    private void scaleDownFirstView(RecyclerView.Recycler recycler, int firstVisibleItem)
+    {
+        View toScaleView = getChildAt(firstVisibleItem);
+        View partialView = getChildAt(firstVisibleItem+1);
+
+        int maxDistance = itemViewWidth;
+        int distance = partialView.getLeft() - leftBorder;
+
+        float percent = distance * 100 / maxDistance;
+
+        if (toScaleView.getScaleX() > SCALE_FACTOR)
+        {
+            // Scale down here
+            float scaling = SCALE_FACTOR - (SCALE_FACTOR * percent / 100);
+            toScaleView.setScaleX( (toScaleView.getScaleX() - scaling)<SCALE_FACTOR?SCALE_FACTOR:(toScaleView.getScaleX() - scaling) );
+            toScaleView.setScaleY( (toScaleView.getScaleY() - scaling)<SCALE_FACTOR?SCALE_FACTOR:(toScaleView.getScaleY() - scaling) );
+        }
+    }
+
+    private void scaleUpFirstView(RecyclerView.Recycler recycler, int firstVisibleItem)
+    {
+        View toScaleView = getChildAt(firstVisibleItem);
+        View partialView = getChildAt(firstVisibleItem+1);
+
+        int maxDistance = itemViewWidth;
+        int distance = leftBorder + itemViewWidth - partialView.getLeft();
+
+        float percent = Math.abs(distance * 100 / (itemViewWidth + leftBorder));
+        float factor = percent/100;
+
+        if (logsEnabled)
+            Log.e(TAG, "scaleUpFirstView: factor" + factor );
+
+        if (toScaleView.getScaleX() < 1f)
+        {
+            // Scale up view here
+            float scaling = factor;
+            toScaleView.setScaleX( 1f - (1-SCALE_FACTOR)*scaling );
+            toScaleView.setScaleY( 1f - (1-SCALE_FACTOR)*scaling );
+        }
+
+    }
+
+    /*
+    public void downScaleViews(RecyclerView.Recycler recycler)
+    {
+        // Find First Visible Item
+        findFirstVisiblePosition(recycler);
+
+        View firstView = getChildAt(firstVisibleItem);
+        View partialView = getChildAt(firstVisibleItem+1);
+
+        int maxDistance = itemViewWidth;
+        int distance = partialView.getLeft() - leftBorder;
+
+        float percent = distance * 100 / maxDistance;
+
+        if (firstView != null && firstView.getScaleX() > SCALE_FACTOR)
+        {
+            // Scale down
+            float scaling = SCALE_FACTOR - (SCALE_FACTOR * percent / 100);
+            firstView.setScaleX( (firstView.getScaleX() - scaling)<SCALE_FACTOR?SCALE_FACTOR:(firstView.getScaleX() - scaling) );
+            firstView.setScaleY( (firstView.getScaleX() - scaling)<SCALE_FACTOR?SCALE_FACTOR:(firstView.getScaleX() - scaling) );
+        }
+
+        // Translation to left
+        int translationDistance = (int)(SCALE_MARGIN*(100-percent)/100);
+        firstView.offsetLeftAndRight(-translationDistance);
+
+        if (logsEnabled)
+        {
+            Log.e(TAG, "downScaleViews: first: " + firstVisibleItem + " -- partial: " + (firstVisibleItem+1) + " --- max: " + maxDistance + " --- dist: " + distance);
+            Log.w(TAG, "downScaleViews: Percetn: " + percent );
+            //Log.w(TAG, "downScaleViews: Margin: " + (int)(SCALE_MARGIN*percent/100) );
+            //Log.w(TAG, "downScaleViews: Scaling: " + scaling );
+            Log.w(TAG, "downScaleViews: Translation: " + translationDistance );
+        }
+    }
+
+    public void upScaleViews(RecyclerView.Recycler recycler)
+    {
+        // Find first visible item
+        findFirstVisiblePosition(recycler);
+
+        View firstView = getChildAt(firstVisibleItem);
+        View partialView = getChildAt(firstVisibleItem+1);
+
+        int maxDistance = itemViewWidth;
+        int distance = itemViewWidth - partialView.getLeft();
+
+        float percent = Math.abs(distance * 100 / (itemViewWidth + leftBorder));
+        float scaling = 0f;
+
+        if (firstView != null && firstView.getScaleX() < 1)
+        {
+            // Scale up
+            scaling = ( (1-SCALE_FACTOR)*percent );
+            firstView.setScaleX( firstView.getScaleX() + scaling>1f?1f:scaling );
+            firstView.setScaleY( firstView.getScaleY() + scaling>1f?1f:scaling );
+        }
+
+        if (logsEnabled)
+        {
+            Log.e(TAG, "upScaleViews: first: " + firstVisibleItem + " -- partial: " + (firstVisibleItem+1) + " --- max: " + maxDistance + " --- dist: " + distance + " --- left border: " + leftBorder);
+            Log.w(TAG, "upScaleViews: Percetn: " + percent );
+            Log.w(TAG, "upScaleViews: Scaling: " + scaling );
+        }
+
+    }
+    */
 
 }
