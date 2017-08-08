@@ -415,6 +415,25 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
             float scaling = SCALE_FACTOR - (SCALE_FACTOR * percent / 100);
             toScaleView.setScaleX( (toScaleView.getScaleX() - scaling)<SCALE_FACTOR?SCALE_FACTOR:(toScaleView.getScaleX() - scaling) );
             toScaleView.setScaleY( (toScaleView.getScaleY() - scaling)<SCALE_FACTOR?SCALE_FACTOR:(toScaleView.getScaleY() - scaling) );
+
+            if (toScaleView.getScaleX() > 1f)
+                toScaleView.setScaleX(1f);
+
+            if (toScaleView.getScaleY() > 1f)
+                toScaleView.setScaleY(1f);
+        }
+        else {
+            toScaleView.setScaleX(SCALE_FACTOR);
+            toScaleView.setScaleY(SCALE_FACTOR);
+        }
+
+        int translationDistance = (int)(SCALE_MARGIN*(100-percent)/100);
+        toScaleView.offsetLeftAndRight(-translationDistance);
+
+        if (toScaleView.getLeft() < (leftBorder-SCALE_MARGIN) )
+        {
+            toScaleView.setLeft((leftBorder-SCALE_MARGIN));
+            toScaleView.setRight(leftBorder + (int)(itemViewWidth*SCALE_FACTOR));
         }
     }
 
@@ -429,8 +448,8 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         float percent = Math.abs(distance * 100 / (itemViewWidth + leftBorder));
         float factor = percent/100;
 
-        if (logsEnabled)
-            Log.e(TAG, "scaleUpFirstView: factor" + factor );
+        //if (logsEnabled)
+        //    Log.e(TAG, "scaleUpFirstView: factor" + factor );
 
         if (toScaleView.getScaleX() < 1f)
         {
@@ -438,6 +457,16 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
             float scaling = factor;
             toScaleView.setScaleX( 1f - (1-SCALE_FACTOR)*scaling );
             toScaleView.setScaleY( 1f - (1-SCALE_FACTOR)*scaling );
+
+            if (toScaleView.getScaleX() > 1f)
+                toScaleView.setScaleX(1f);
+
+            if (toScaleView.getScaleY() > 1f)
+                toScaleView.setScaleY(1f);
+        }
+        else {
+            toScaleView.setScaleX(1f);
+            toScaleView.setScaleY(1f);
         }
 
     }
