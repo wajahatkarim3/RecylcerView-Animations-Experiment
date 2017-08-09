@@ -39,7 +39,7 @@ public class CategoriesAdapter extends RecyclerView.Adapter<CategoriesAdapter.Ca
     @Override
     public void onBindViewHolder(CategoryViewHolder holder, int position) {
         holder.txtTitle.setText(categoryLabels[position]);
-        holder.layoutBackground.setBackgroundColor(Color.parseColor(colorCodes[position]));
+        holder.txtTitle.setBackgroundColor(Color.parseColor(colorCodes[position]));
     }
 
     @Override

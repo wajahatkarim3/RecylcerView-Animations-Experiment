@@ -3,6 +3,7 @@ package com.wajahatkarim3.recycleranimmanager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -47,7 +48,7 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
      */
     boolean logsEnabled = true;
     private int SCALE_MARGIN = 50;
-    private float SCALE_FACTOR = 0.8f;
+    private float SCALE_FACTOR = 0.7f;
 
     public StackedLayoutManager() {
     }
@@ -59,7 +60,7 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
 
     @Override
     public RecyclerView.LayoutParams generateDefaultLayoutParams() {
-        return new RecyclerView.LayoutParams(RecyclerView.LayoutParams.WRAP_CONTENT, RecyclerView.LayoutParams.WRAP_CONTENT);
+        return new RecyclerView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
     }
 
     @Override
@@ -87,8 +88,27 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
 
     @Override
     public boolean canScrollHorizontally() {
-        return true;
+        return 0 != getChildCount();
     }
+
+    @Override
+    public void onMeasure(final RecyclerView.Recycler recycler, final RecyclerView.State state, final int widthSpec, final int heightSpec) {
+
+        //int heightMode = View.MeasureSpec.getMode(heightSpec);
+        int he = View.MeasureSpec.makeMeasureSpec(heightSpec, View.MeasureSpec.EXACTLY);
+
+        Log.e(TAG, "onMeasure: " + widthSpec + ", " + he);
+
+        super.onMeasure(recycler, state, widthSpec, he);
+    }
+
+    @Override
+    public void onAdapterChanged(final RecyclerView.Adapter oldAdapter, final RecyclerView.Adapter newAdapter) {
+        super.onAdapterChanged(oldAdapter, newAdapter);
+
+        removeAllViews();
+    }
+
 
     @Override
     public int scrollHorizontallyBy(int dx, RecyclerView.Recycler recycler, RecyclerView.State state) {
@@ -116,6 +136,11 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         return dx;
     }
 
+    @Override
+    public boolean canScrollVertically() {
+        return false;
+    }
+
     public void fillTheView(RecyclerView.Recycler recycler)
     {
         // Obtain the first visible item position
@@ -125,7 +150,6 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         detachAndScrapAttachedViews(recycler);
 
         // Layout scaled views here
-        //int scaledViewsCount = drawScaledViews(recycler);
 
         // Layout visible views here
         int decorViewsCount = drawDecorViews(recycler);
@@ -142,37 +166,13 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         }
     }
 
-    public int drawScaledViews(RecyclerView.Recycler recycler)
-    {
-        int scaledViewsCount = 0;
-        int i = firstVisibleItem;
-        int left = getPaddingLeft();
-        //for (i = firstVisibleItem-1; i>=0 && i>=firstVisibleItem-numViewsToScale; i--)
-        for (i = firstVisibleItem-1; i>=0; i--)
-        {
-            if (i< 0 || i >= getItemCount())
-                break;
-
-            View view = recycler.getViewForPosition(i);
-            addView(view);
-
-            measureChildWithMargins(view, 0, 0);
-
-            int width = getDecoratedMeasuredWidth(view);
-            int height = getDecoratedMeasuredHeight(view);
-
-            layoutDecorated(view, left, 0, left+width, height);
-
-            scaledViewsCount++;
-        }
-        return scaledViewsCount;
-    }
-
     public int drawDecorViews(RecyclerView.Recycler recycler)
     {
         int decorViewsCount = 0;
         int left = getPaddingLeft() + SCALE_MARGIN;
         leftBorder = getPaddingLeft() + SCALE_MARGIN;
+        //leftBorder = getPaddingLeft();
+        //left = leftBorder;
         int i = firstVisibleItem;
         //while (i >= firstVisibleItem && i < (firstVisibleItem + maxViewToVisible) )
         while (i >= firstVisibleItem && i < getItemCount() )
@@ -189,6 +189,11 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
             int height = getDecoratedMeasuredHeight(view);
 
             layoutDecorated(view, left, 0, left+width, height);
+
+            //view.setAlpha(0.5f);
+            view.setPivotX(-(int)(width*0.4));
+            view.setPivotY((int)(height*0.4));
+
             left += width;
 
             i++;
@@ -416,27 +421,45 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         int distance = partialView.getLeft() - leftBorder;
 
         float percent = distance * 100 / maxDistance;
+        float totalScaleToDecrease = SCALE_FACTOR - (SCALE_FACTOR * percent / 100);         // 0.2
+        totalScaleToDecrease = 1 - totalScaleToDecrease;
 
         if (toScaleView.getScaleX() > SCALE_FACTOR)
         {
             // Scale down here
-            float scaling = SCALE_FACTOR - (SCALE_FACTOR * percent / 100);
-            toScaleView.setScaleX( (toScaleView.getScaleX() - scaling)<SCALE_FACTOR?SCALE_FACTOR:(toScaleView.getScaleX() - scaling) );
-            toScaleView.setScaleY( (toScaleView.getScaleY() - scaling)<SCALE_FACTOR?SCALE_FACTOR:(toScaleView.getScaleY() - scaling) );
+            //float scaling = SCALE_FACTOR - (SCALE_FACTOR * percent / 100);
+            //toScaleView.setScaleX( (toScaleView.getScaleX() - scaling)<SCALE_FACTOR?SCALE_FACTOR:(toScaleView.getScaleX() - scaling) );
+            //toScaleView.setScaleY( (toScaleView.getScaleY() - scaling)<SCALE_FACTOR?SCALE_FACTOR:(toScaleView.getScaleY() - scaling) );
+
+
+            //float scalingCurrent = totalScaleToDecrease * percent;
+            toScaleView.setScaleX(totalScaleToDecrease);
+            toScaleView.setScaleY(totalScaleToDecrease);
+
 
             if (toScaleView.getScaleX() > 1f)
                 toScaleView.setScaleX(1f);
 
             if (toScaleView.getScaleY() > 1f)
                 toScaleView.setScaleY(1f);
+
+            if (toScaleView.getScaleX() < SCALE_FACTOR)
+                toScaleView.setScaleX(SCALE_FACTOR);
+
+            if (toScaleView.getScaleY() < SCALE_FACTOR)
+                toScaleView.setScaleY(SCALE_FACTOR);
         }
         else {
             toScaleView.setScaleX(SCALE_FACTOR);
             toScaleView.setScaleY(SCALE_FACTOR);
         }
 
+        //if (logsEnabled)
+        //    Log.e(TAG, "scaleDownFirstView: x: " + toScaleView.getScaleX() + ", y: " + toScaleView.getScaleY() + " at percent: " + percent + " with scaling: " + totalScaleToDecrease);
+
+
         int translationDistance = (int)(SCALE_MARGIN*(100-percent)/100);
-        toScaleView.offsetLeftAndRight(-translationDistance);
+        //toScaleView.offsetLeftAndRight(-translationDistance);
 
         if (toScaleView.getLeft() < (leftBorder-SCALE_MARGIN) )
         {
@@ -476,6 +499,9 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
             toScaleView.setScaleX(1f);
             toScaleView.setScaleY(1f);
         }
+
+        int translationDistance = (int)(1-SCALE_MARGIN*factor);
+        //toScaleView.offsetLeftAndRight(translationDistance);
 
     }
 
