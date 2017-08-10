@@ -36,6 +36,8 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
      */
     int itemViewWidth = 0;
 
+    int itemViewHeight = 0;
+
     /**
      * The number of views to scale behind the first item
      */
@@ -186,11 +188,10 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
             int width = getDecoratedMeasuredWidth(view);
             int height = getDecoratedMeasuredHeight(view);
 
-            layoutDecorated(view, left, 0, left+width, height);
+            itemViewWidth = width;
+            itemViewHeight = height;
 
-            //view.setAlpha(0.5f);
-            view.setPivotX(-(int)(width*0.4));
-            view.setPivotY((int)(height*0.4));
+            layoutDecorated(view, left, 0, left+width, height);
 
             left += width;
 
@@ -282,7 +283,7 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
                 view.offsetLeftAndRight(-Math.min(diff, dx));
             }
 
-            scaleDownFirstView(recycler, firstVisibleItem);
+            scaleDownFirstView(recycler, firstVisibleItem+1);
         }
         else {
             for (int i=firstVisibleItem; i<getChildCount(); i++)
@@ -298,6 +299,8 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
 
             scaleDownFirstView(recycler, firstVisibleItem);
         }
+
+
     }
 
     public void scrollToRight(RecyclerView.Recycler recycler, int dx)
@@ -410,34 +413,37 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         return false;
     }
 
-    private void scaleDownFirstView(RecyclerView.Recycler recycler, int firstVisibleItem)
-    {
+    private void scaleDownFirstView(RecyclerView.Recycler recycler, int firstVisibleItem) {
+
+        View toAlphaView = getChildAt(firstVisibleItem-1);
         View toScaleView = getChildAt(firstVisibleItem);
-        View partialView = getChildAt(firstVisibleItem+1);
+        View partialView = getChildAt(firstVisibleItem + 1);
+
+        if (toScaleView == null || partialView == null) return;
+
+        //if (logsEnabled)
+        //    Log.w(TAG, "scrollToLeft: Scaling Down: " + firstVisibleItem);
+
+        float scale = SCALE_FACTOR;
+
+        //view.setAlpha(0.5f);
+        toScaleView.setPivotX(-(int) (toScaleView.getWidth() * 0.3));
+        toScaleView.setPivotY((int) (toScaleView.getHeight() * 0.4));
 
         int maxDistance = itemViewWidth;
         int distance = partialView.getLeft() - leftBorder;
-
         float percent = distance * 100 / maxDistance;
-        float valueToScale = 1 - SCALE_FACTOR;
-        float totalScaleToDecrease = SCALE_FACTOR - (SCALE_FACTOR * percent / 100);
-        //totalScaleToDecrease = 1 - totalScaleToDecrease;
 
-        totalScaleToDecrease = (valueToScale*percent/100);
-        totalScaleToDecrease = SCALE_FACTOR + totalScaleToDecrease;
+        float valueToScale = 1 - scale;
+        float totalScaleToDecrease = 0f;
+        totalScaleToDecrease = (valueToScale * percent / 100);
+        totalScaleToDecrease = scale + totalScaleToDecrease;
 
-        if (toScaleView.getScaleX() > SCALE_FACTOR)
+        if (toScaleView.getScaleX() > scale)
         {
             // Scale down here
-            //float scaling = SCALE_FACTOR - (SCALE_FACTOR * percent / 100);
-            //toScaleView.setScaleX( (toScaleView.getScaleX() - scaling)<SCALE_FACTOR?SCALE_FACTOR:(toScaleView.getScaleX() - scaling) );
-            //toScaleView.setScaleY( (toScaleView.getScaleY() - scaling)<SCALE_FACTOR?SCALE_FACTOR:(toScaleView.getScaleY() - scaling) );
-
-
-            //float scalingCurrent = totalScaleToDecrease * percent;
-            toScaleView.setScaleX(totalScaleToDecrease<SCALE_FACTOR?SCALE_FACTOR:totalScaleToDecrease);
-            toScaleView.setScaleY(totalScaleToDecrease<SCALE_FACTOR?SCALE_FACTOR:totalScaleToDecrease);
-
+            toScaleView.setScaleX(totalScaleToDecrease < scale ? scale : totalScaleToDecrease);
+            toScaleView.setScaleY(totalScaleToDecrease < scale ? scale : totalScaleToDecrease);
 
             if (toScaleView.getScaleX() > 1f)
                 toScaleView.setScaleX(1f);
@@ -445,37 +451,68 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
             if (toScaleView.getScaleY() > 1f)
                 toScaleView.setScaleY(1f);
 
-            if (toScaleView.getScaleX() < SCALE_FACTOR)
-                toScaleView.setScaleX(SCALE_FACTOR);
+            if (toScaleView.getScaleX() < scale)
+                toScaleView.setScaleX(scale);
 
-            if (toScaleView.getScaleY() < SCALE_FACTOR)
-                toScaleView.setScaleY(SCALE_FACTOR);
-        }
-        else {
-            toScaleView.setScaleX(SCALE_FACTOR);
-            toScaleView.setScaleY(SCALE_FACTOR);
+            if (toScaleView.getScaleY() < scale)
+                toScaleView.setScaleY(scale);
+        } else {
+            toScaleView.setScaleX(scale);
+            toScaleView.setScaleY(scale);
         }
 
-        if (logsEnabled)
+        // Perform alpha scaling for second view here
+        if (toAlphaView != null)
         {
-            Log.w(TAG, "scaleDownFirstView: distance: " + distance );
-            Log.e(TAG, "scaleDownFirstView: x: " + toScaleView.getScaleX() + ", y: " + toScaleView.getScaleY() + " at percent: " + percent + " with scaling: " + totalScaleToDecrease);
+            scale = SCALE_FACTOR / 1.3f;
+            valueToScale = SCALE_FACTOR - scale;
+            totalScaleToDecrease = (valueToScale * percent / 100);
+            totalScaleToDecrease = scale + totalScaleToDecrease;
 
+            if (toAlphaView.getScaleX() > scale)
+            {
+                // Scale down here
+                toAlphaView.setScaleX(totalScaleToDecrease < scale ? scale : totalScaleToDecrease);
+                toAlphaView.setScaleY(totalScaleToDecrease < scale ? scale : totalScaleToDecrease);
+                toAlphaView.setAlpha(0.5f + (0.5f*percent / 100));
+
+                Log.w(TAG, "scaleDownFirstView: Alpha " + (0.5f*percent / 100) + "" );
+
+                if (toAlphaView.getScaleX() > 1f)
+                    toAlphaView.setScaleX(1f);
+
+                if (toAlphaView.getScaleY() > 1f)
+                    toAlphaView.setScaleY(1f);
+
+                if (toAlphaView.getScaleX() < scale)
+                    toAlphaView.setScaleX(scale);
+
+                if (toAlphaView.getScaleY() < scale)
+                    toAlphaView.setScaleY(scale);
+            }
+            else
+            {
+                toAlphaView.setScaleX(scale);
+                toAlphaView.setScaleY(scale);
+            }
         }
 
+        //if (logsEnabled)
+        //{
+        //    Log.w(TAG, "scaleDownFirstView: distance: " + distance );
+        //    Log.e(TAG, "scaleDownFirstView: x: " + toScaleView.getScaleX() + ", y: " + toScaleView.getScaleY() + " at percent: " + percent + " with scaling: " + totalScaleToDecrease);
+        //}
 
-        int translationDistance = (int)(SCALE_MARGIN*(100-percent)/100);
-        //toScaleView.offsetLeftAndRight(-translationDistance);
-
-        if (toScaleView.getLeft() < (leftBorder-SCALE_MARGIN) )
-        {
-            toScaleView.setLeft((leftBorder-SCALE_MARGIN));
-            toScaleView.setRight(leftBorder + (int)(itemViewWidth*SCALE_FACTOR));
+        if (toScaleView.getLeft() < (leftBorder - SCALE_MARGIN)) {
+            toScaleView.setLeft((leftBorder - SCALE_MARGIN));
+            toScaleView.setRight(leftBorder + (int) (itemViewWidth * scale));
         }
+
     }
 
     private void scaleUpFirstView(RecyclerView.Recycler recycler, int firstVisibleItem)
     {
+        View toAlphaView = getChildAt(firstVisibleItem-1);
         View toScaleView = getChildAt(firstVisibleItem);
         View partialView = getChildAt(firstVisibleItem+1);
 
@@ -506,8 +543,34 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
             toScaleView.setScaleY(1f);
         }
 
-        int translationDistance = (int)(1-SCALE_MARGIN*factor);
-        //toScaleView.offsetLeftAndRight(translationDistance);
+        // Scale up the alpha view here and decrease alpha
+        if (toAlphaView != null)
+        {
+            // Current scale will be SCALE_FACTOR / 1.3f = 0.5
+            // Scaling from 0.5 to 0.7
+            if (toAlphaView.getScaleX() < SCALE_FACTOR )
+            {
+                percent = 100f - percent;
+                float valueToScale = SCALE_FACTOR - (SCALE_FACTOR/1.3f);            // 0.2
+                float totalScaleToIncrease = 0f;
+                totalScaleToIncrease = (valueToScale * percent / 100);
+                totalScaleToIncrease = (SCALE_FACTOR/1.3f) + totalScaleToIncrease;
+
+                toAlphaView.setScaleX( totalScaleToIncrease );
+                toAlphaView.setScaleY( totalScaleToIncrease );
+                toAlphaView.setAlpha(0.5f + 0.5f*percent);
+
+                if (toAlphaView.getScaleX() > SCALE_FACTOR)
+                    toAlphaView.setScaleX(SCALE_FACTOR);
+
+                if (toAlphaView.getScaleY() > SCALE_FACTOR)
+                    toAlphaView.setScaleY(SCALE_FACTOR);
+            }
+            else {
+                toAlphaView.setScaleX(SCALE_FACTOR);
+                toAlphaView.setScaleY(SCALE_FACTOR);
+            }
+        }
 
     }
 
