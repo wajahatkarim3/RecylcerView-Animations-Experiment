@@ -49,10 +49,11 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
      * Enable / disable logs
      */
     boolean logsEnabled = true;
-    private int SCALE_MARGIN = 50;
+    private int SCALE_MARGIN = 40;
     private float SCALE_FACTOR = 0.7f;
 
     public StackedLayoutManager() {
+
     }
 
     public StackedLayoutManager(int SCALE_MARGIN, float SCALE_FACTOR) {
@@ -89,19 +90,42 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
     }
 
     @Override
-    public boolean canScrollHorizontally() {
-        return 0 != getChildCount();
-    }
-
-    @Override
     public void onMeasure(final RecyclerView.Recycler recycler, final RecyclerView.State state, final int widthSpec, final int heightSpec) {
 
+        final int widthMode = View.MeasureSpec.getMode(widthSpec);
+        final int heightMode = View.MeasureSpec.getMode(heightSpec);
+
+        final int widthSize = View.MeasureSpec.getSize(widthSpec);
+        final int heightSize = View.MeasureSpec.getSize(heightSpec);
+
+        final boolean hasWidthSize = widthMode != View.MeasureSpec.UNSPECIFIED;
+        final boolean hasHeightSize = heightMode != View.MeasureSpec.UNSPECIFIED;
+
+        final boolean exactWidth = widthMode == View.MeasureSpec.EXACTLY;
+        final boolean exactHeight = heightMode == View.MeasureSpec.EXACTLY;
+
+        if (exactWidth && exactHeight) {
+            // in case of exact calculations for both dimensions let's use default "onMeasure" implementation
+            super.onMeasure(recycler, state, widthSpec, heightSpec);
+            return;
+        }
+
+
+        /*
+
+
         //int heightMode = View.MeasureSpec.getMode(heightSpec);
-        int he = View.MeasureSpec.makeMeasureSpec(heightSpec, View.MeasureSpec.EXACTLY);
+        int he = View.MeasureSpec.getSize(heightSpec);
+        int wi = View.MeasureSpec.getSize(widthSpec);
 
-        Log.e(TAG, "onMeasure: " + widthSpec + ", " + he);
+        he = View.MeasureSpec.makeMeasureSpec(heightSpec, View.MeasureSpec.UNSPECIFIED);
+        wi = View.MeasureSpec.makeMeasureSpec(widthSpec, View.MeasureSpec.UNSPECIFIED);
 
-        super.onMeasure(recycler, state, widthSpec, he);
+        Log.e(TAG, "onMeasure: " + wi + ", " + he);
+        //setMeasuredDimension(wi, he);
+        super.onMeasure(recycler, state, wi, he);
+        */
+        super.onMeasure(recycler, state, widthSpec, heightSpec);
     }
 
     @Override
@@ -111,6 +135,10 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         removeAllViews();
     }
 
+    @Override
+    public boolean canScrollHorizontally() {
+        return 0 != getChildCount();
+    }
 
     @Override
     public int scrollHorizontallyBy(int dx, RecyclerView.Recycler recycler, RecyclerView.State state) {
@@ -357,9 +385,6 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
 
                     view.offsetLeftAndRight(-delta);
 
-
-
-                    //isPartial = false;
                 }
 
             }
@@ -476,7 +501,7 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
                 toAlphaView.setScaleY(totalScaleToDecrease < scale ? scale : totalScaleToDecrease);
                 toAlphaView.setAlpha(0.5f + (0.5f*percent / 100));
 
-                Log.w(TAG, "scaleDownFirstView: Alpha " + (0.5f*percent / 100) + "" );
+                //Log.w(TAG, "scaleDownFirstView: Alpha " + (0.5f*percent / 100) + "" );
 
                 if (toAlphaView.getScaleX() > 1f)
                     toAlphaView.setScaleX(1f);
@@ -573,73 +598,5 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         }
 
     }
-
-    /*
-    public void downScaleViews(RecyclerView.Recycler recycler)
-    {
-        // Find First Visible Item
-        findFirstVisiblePosition(recycler);
-
-        View firstView = getChildAt(firstVisibleItem);
-        View partialView = getChildAt(firstVisibleItem+1);
-
-        int maxDistance = itemViewWidth;
-        int distance = partialView.getLeft() - leftBorder;
-
-        float percent = distance * 100 / maxDistance;
-
-        if (firstView != null && firstView.getScaleX() > SCALE_FACTOR)
-        {
-            // Scale down
-            float scaling = SCALE_FACTOR - (SCALE_FACTOR * percent / 100);
-            firstView.setScaleX( (firstView.getScaleX() - scaling)<SCALE_FACTOR?SCALE_FACTOR:(firstView.getScaleX() - scaling) );
-            firstView.setScaleY( (firstView.getScaleX() - scaling)<SCALE_FACTOR?SCALE_FACTOR:(firstView.getScaleX() - scaling) );
-        }
-
-        // Translation to left
-        int translationDistance = (int)(SCALE_MARGIN*(100-percent)/100);
-        firstView.offsetLeftAndRight(-translationDistance);
-
-        if (logsEnabled)
-        {
-            Log.e(TAG, "downScaleViews: first: " + firstVisibleItem + " -- partial: " + (firstVisibleItem+1) + " --- max: " + maxDistance + " --- dist: " + distance);
-            Log.w(TAG, "downScaleViews: Percetn: " + percent );
-            //Log.w(TAG, "downScaleViews: Margin: " + (int)(SCALE_MARGIN*percent/100) );
-            //Log.w(TAG, "downScaleViews: Scaling: " + scaling );
-            Log.w(TAG, "downScaleViews: Translation: " + translationDistance );
-        }
-    }
-
-    public void upScaleViews(RecyclerView.Recycler recycler)
-    {
-        // Find first visible item
-        findFirstVisiblePosition(recycler);
-
-        View firstView = getChildAt(firstVisibleItem);
-        View partialView = getChildAt(firstVisibleItem+1);
-
-        int maxDistance = itemViewWidth;
-        int distance = itemViewWidth - partialView.getLeft();
-
-        float percent = Math.abs(distance * 100 / (itemViewWidth + leftBorder));
-        float scaling = 0f;
-
-        if (firstView != null && firstView.getScaleX() < 1)
-        {
-            // Scale up
-            scaling = ( (1-SCALE_FACTOR)*percent );
-            firstView.setScaleX( firstView.getScaleX() + scaling>1f?1f:scaling );
-            firstView.setScaleY( firstView.getScaleY() + scaling>1f?1f:scaling );
-        }
-
-        if (logsEnabled)
-        {
-            Log.e(TAG, "upScaleViews: first: " + firstVisibleItem + " -- partial: " + (firstVisibleItem+1) + " --- max: " + maxDistance + " --- dist: " + distance + " --- left border: " + leftBorder);
-            Log.w(TAG, "upScaleViews: Percetn: " + percent );
-            Log.w(TAG, "upScaleViews: Scaling: " + scaling );
-        }
-
-    }
-    */
 
 }

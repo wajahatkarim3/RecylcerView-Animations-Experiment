@@ -19,7 +19,6 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
         adapter.notifyDataSetChanged();
 
-
         RecyclerView catrecyclerView = (RecyclerView) findViewById(R.id.recyclerCategories);
         catrecyclerView.setLayoutManager(new StackedLayoutManager(100, 0.7f));
         catrecyclerView.setHasFixedSize(true);
