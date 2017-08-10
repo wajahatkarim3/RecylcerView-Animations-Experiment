@@ -171,8 +171,6 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         int decorViewsCount = 0;
         int left = getPaddingLeft() + SCALE_MARGIN;
         leftBorder = getPaddingLeft() + SCALE_MARGIN;
-        //leftBorder = getPaddingLeft();
-        //left = leftBorder;
         int i = firstVisibleItem;
         //while (i >= firstVisibleItem && i < (firstVisibleItem + maxViewToVisible) )
         while (i >= firstVisibleItem && i < getItemCount() )
@@ -421,8 +419,12 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
         int distance = partialView.getLeft() - leftBorder;
 
         float percent = distance * 100 / maxDistance;
-        float totalScaleToDecrease = SCALE_FACTOR - (SCALE_FACTOR * percent / 100);         // 0.2
-        totalScaleToDecrease = 1 - totalScaleToDecrease;
+        float valueToScale = 1 - SCALE_FACTOR;
+        float totalScaleToDecrease = SCALE_FACTOR - (SCALE_FACTOR * percent / 100);
+        //totalScaleToDecrease = 1 - totalScaleToDecrease;
+
+        totalScaleToDecrease = (valueToScale*percent/100);
+        totalScaleToDecrease = SCALE_FACTOR + totalScaleToDecrease;
 
         if (toScaleView.getScaleX() > SCALE_FACTOR)
         {
@@ -433,8 +435,8 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
 
 
             //float scalingCurrent = totalScaleToDecrease * percent;
-            toScaleView.setScaleX(totalScaleToDecrease);
-            toScaleView.setScaleY(totalScaleToDecrease);
+            toScaleView.setScaleX(totalScaleToDecrease<SCALE_FACTOR?SCALE_FACTOR:totalScaleToDecrease);
+            toScaleView.setScaleY(totalScaleToDecrease<SCALE_FACTOR?SCALE_FACTOR:totalScaleToDecrease);
 
 
             if (toScaleView.getScaleX() > 1f)
@@ -454,8 +456,12 @@ public class StackedLayoutManager extends RecyclerView.LayoutManager {
             toScaleView.setScaleY(SCALE_FACTOR);
         }
 
-        //if (logsEnabled)
-        //    Log.e(TAG, "scaleDownFirstView: x: " + toScaleView.getScaleX() + ", y: " + toScaleView.getScaleY() + " at percent: " + percent + " with scaling: " + totalScaleToDecrease);
+        if (logsEnabled)
+        {
+            Log.w(TAG, "scaleDownFirstView: distance: " + distance );
+            Log.e(TAG, "scaleDownFirstView: x: " + toScaleView.getScaleX() + ", y: " + toScaleView.getScaleY() + " at percent: " + percent + " with scaling: " + totalScaleToDecrease);
+
+        }
 
 
         int translationDistance = (int)(SCALE_MARGIN*(100-percent)/100);
